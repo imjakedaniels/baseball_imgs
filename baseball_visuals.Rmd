@@ -93,6 +93,7 @@ scale_colour_brewer(palette = "Spectral") +
   guides(colour = guide_legend(override.aes = list(size=8)))
 ```
 
+# main visual 1 ( barrel count differences )
 ```{r}
 df %>% 
   group_by(name) %>%
@@ -119,6 +120,7 @@ labs(x= "Season", y = "Barrels",
         plot.margin = margin(t=10, r=20, b=10, l=10, unit = "pt")) 
 ```
 
+# main visual 2 (EV95 quantiles)
 ```{r}
 df %>%
   mutate(ev95percent = as.numeric(ev95percent)) %>%
@@ -153,10 +155,5 @@ scale_colour_brewer(palette = "Spectral") +
         plot.title = element_text(size=15, colour = "gray20", face = "bold", hjust = 0.5),
         plot.subtitle = element_text(size=10, colour = "gray20", face = "italic", hjust = 0.5),
         plot.caption = element_text(size = 10, colour = "gray60", face = "italic")) +
-  guides(colour = guide_legend(override.aes = list(size=8)))
+  guides(colour = guide_legend(override.aes = list(size=10)))
 ```
-
-```{r}
-
-```
-
