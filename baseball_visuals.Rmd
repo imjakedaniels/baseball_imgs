@@ -1,0 +1,162 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+### Required Packages!
+```{r message=FALSE, warning = FALSE}
+library(tidyverse)
+library(showtext)
+library(directlabels)
+library(jsonlite)
+library(RCurl)
+library(ggthemes)
+
+showtext_auto() 
+```
+
+# loading
+```{r}
+batting_2018 <- fromJSON(getURL('https://baseballsavant.mlb.com/statcast_leaderboard?type=details&year=2018&min_ab=25.json'))
+
+batting_2017 <- fromJSON(getURL('https://baseballsavant.mlb.com/statcast_leaderboard?type=details&year=2017&min_ab=25.json'))
+
+batting_2016 <- fromJSON(getURL('https://baseballsavant.mlb.com/statcast_leaderboard?type=details&year=2016&min_ab=25.json'))
+
+df <- batting_2018 %>%
+bind_rows(batting_2017) %>%
+  bind_rows(batting_2016)
+```
+# peaking
+```{r}
+glimpse(df)
+```
+
+# visual progression
+```{r}
+# chart 1
+df %>%
+  ggplot(aes(x=season, y=as.numeric(barrels), group = name)) +
+  geom_line(alpha=0.2) +
+  geom_line(data = df %>% filter(name == "Grichuk, Randal"), aes(x=season, y=as.numeric(barrels), group = name), alpha = 1, colour = "blue") +
+  geom_line(data = df %>% filter(name == "Morales, Kendrys"), aes(x=season, y=as.numeric(barrels), group = name), alpha = 1, colour = "blue") +
+  geom_line(data = df %>% filter(name == "Smoak, Justin"), aes(x=season, y=as.numeric(barrels), group = name), alpha = 1, colour = "blue") 
+
+# chart 2
+df %>%
+  mutate(avg_hit_speed = as.numeric(avg_hit_speed)) %>%
+  mutate(quantile = case_when(
+         avg_hit_speed < quantile(avg_hit_speed, 0.25, names = FALSE) ~ "0-25%",
+         avg_hit_speed < quantile(avg_hit_speed, 0.5, names = FALSE) ~ "25-50%",
+         avg_hit_speed < quantile(avg_hit_speed, 0.75, names = FALSE) ~ "50-75%",
+         avg_hit_speed > quantile(avg_hit_speed, 0.75, names = FALSE) ~ "75-100%")) %>%
+  ggplot(aes(x=season, y=as.numeric(avg_hit_speed), group = name, colour = quantile)) +
+  geom_line(alpha=0.2) +
+  geom_line(data = df %>% filter(name == "Grichuk, Randal"), aes(x=season, y=as.numeric(avg_hit_speed), group = name), alpha = 1, colour = "blue") +
+  geom_line(data = df %>% filter(name == "Morales, Kendrys"), aes(x=season, y=as.numeric(avg_hit_speed), group = name), alpha = 1, colour = "blue") +
+  geom_line(data = df %>% filter(name == "Smoak, Justin"), aes(x=season, y=as.numeric(avg_hit_speed), group = name), alpha = 1, colour = "blue") 
+
+# chart 3
+df %>%
+  mutate(brl_percent = as.numeric(brl_percent)) %>%
+  mutate(quantile = case_when(
+         brl_percent <= quantile(brl_percent, 0.25, names = FALSE) ~ "0-25%",
+         
+         brl_percent <= quantile(brl_percent, 0.5, names = FALSE) & brl_percent > quantile(brl_percent, 0.25, names = FALSE) ~ "25-50%",
+         
+         brl_percent <= quantile(brl_percent, 0.75, names = FALSE) & brl_percent > quantile(brl_percent, 0.5, names = FALSE) ~ "50-75%",
+         
+         brl_percent > quantile(brl_percent, 0.75, names = FALSE) ~ "75-100%")) %>%
+  
+  ggplot(aes(x=season, y=as.numeric(brl_percent), group = name, colour = quantile)) +
+  geom_line(alpha=0.5) +
+  geom_line(data = df %>% filter(name == "Grichuk, Randal" | name == "Morales, Kendrys" | name == "Smoak, Justin"), aes(x=season, y=as.numeric(brl_percent), group = name), alpha = 1, colour = "black") +
+  geom_dl(data = df %>% filter(name == "Grichuk, Randal" | name == "Morales, Kendrys" | name == "Smoak, Justin"), aes(label = name, colour = "Jays"),  method = list(dl.combine("first.points", "last.points"), cex = 0.8)) +
+scale_colour_brewer(palette = "Spectral") +
+  theme_bw() +
+  
+  labs(x= "Season", y = "Barrel %",
+       colour = NULL,
+       title = "BARREL % CHANGE FROM LAST SEASON",
+       subtitle = "MLB Players with minimum 25 AB",
+       caption = "@datajake | Source: baseballsavant.com") +
+  theme_bw() +
+  theme(panel.border = element_blank(),
+        text = element_text(colour = "gray60", family = "wqy-microhei"),
+        legend.position = "bottom",
+        legend.direction = "horizontal",
+        axis.title.x = element_text(colour="grey20", face = "bold"),
+        axis.title.y = element_text(colour="grey20", face = "italic"),
+        plot.title = element_text(size=15, colour = "gray20", face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size=10, colour = "gray20", face = "italic", hjust = 0.5),
+        plot.caption = element_text(size = 10, colour = "gray60", face = "italic")) +
+  guides(colour = guide_legend(override.aes = list(size=8)))
+```
+
+```{r}
+df %>% 
+  group_by(name) %>%
+  mutate(diff=max(as.numeric(barrels)) - min(as.numeric(barrels))) %>%
+  filter(diff >= 30 & (season == "2017" | season == "2018")) %>%
+ggplot(aes(x = season, y = as.numeric(barrels), col = name, group = name, fill = name, label = name)) +
+  stat_summary(fun.y = print, geom = "line") +
+  geom_text(check_overlap = T, hjust = "outward", fontface = "bold", size = 3) +
+  scale_x_discrete(labels=c("2017", "2018")) +
+labs(x= "Season", y = "Barrels",
+       colour = NULL,
+       title = "SIGNIFICANT DIFFERENCES IN BARREL COUNT",
+       subtitle = "Hitters where barrels increased or decreased by at least 30 are shown",
+       caption = "@datajake | Source: baseballsavant.com") +
+  theme_calc() +
+  theme(panel.border = element_blank(),
+        text = element_text(colour = "gray60", family = "wqy-microhei"),
+        legend.position = "none",
+        axis.title.x = element_text(colour="grey20", face = "bold"),
+        axis.title.y = element_text(colour="grey20", face = "italic"),
+        plot.title = element_text(size=15, colour = "gray20", face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size=10, colour = "gray20", face = "italic", hjust = 0.5),
+        plot.caption = element_text(size = 10, colour = "gray60", face = "italic"),
+        plot.margin = margin(t=10, r=20, b=10, l=10, unit = "pt")) 
+```
+
+```{r}
+df %>%
+  mutate(ev95percent = as.numeric(ev95percent)) %>%
+  mutate(quantile = case_when(
+         ev95percent <= quantile(ev95percent, 0.25, names = FALSE) ~ "0-25%",
+         
+         ev95percent <= quantile(ev95percent, 0.5, names = FALSE) & ev95percent > quantile(ev95percent, 0.25, names = FALSE) ~ "25-50%",
+         
+         ev95percent <= quantile(ev95percent, 0.75, names = FALSE) & ev95percent > quantile(ev95percent, 0.5, names = FALSE) ~ "50-75%",
+         
+         ev95percent > quantile(ev95percent, 0.75, names = FALSE) ~ "75-100%")) %>%
+  
+  ggplot(aes(x=season, y=as.numeric(ev95percent), group = name, colour = quantile)) +
+  geom_line(alpha=0.5) +
+  geom_line(data = df %>% filter(name == "Grichuk, Randal" | name == "Morales, Kendrys" | name == "Smoak, Justin"), aes(x=season, y=as.numeric(ev95percent), group = name), alpha = 1, size = 0.7, colour = "black", linetype = 2) +
+  geom_dl(data = df %>% filter(name == "Grichuk, Randal" | name == "Morales, Kendrys" | name == "Smoak, Justin"), aes(label = name, colour = "Blue Jays"),  method = list(dl.combine("first.points", "last.points"), cex = 0.8)) +
+scale_colour_brewer(palette = "Spectral") +
+  theme_bw() +
+  
+  labs(x= "Season", y = "Hit% with EV95+",
+       colour = NULL,
+       title = "HIT% WITH EV95+ BY SEASON",
+       subtitle = "Hard hit balls (95+ mph) from MLB Players with minimum 25 AB",
+       caption = "@datajake | Source: baseballsavant.com") +
+  theme_bw() +
+  theme(panel.border = element_blank(),
+        text = element_text(colour = "gray60", family = "wqy-microhei"),
+        legend.position = "top",
+        legend.direction = "horizontal",
+        axis.title.x = element_text(colour="grey20", face = "bold"),
+        axis.title.y = element_text(colour="grey20", face = "italic"),
+        plot.title = element_text(size=15, colour = "gray20", face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size=10, colour = "gray20", face = "italic", hjust = 0.5),
+        plot.caption = element_text(size = 10, colour = "gray60", face = "italic")) +
+  guides(colour = guide_legend(override.aes = list(size=8)))
+```
+
+```{r}
+
+```
+
