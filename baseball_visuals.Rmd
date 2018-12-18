@@ -136,24 +136,26 @@ df %>%
   ggplot(aes(x=season, y=as.numeric(ev95percent), group = name, colour = quantile)) +
   geom_line(alpha=0.5) +
   geom_line(data = df %>% filter(name == "Grichuk, Randal" | name == "Morales, Kendrys" | name == "Smoak, Justin"), aes(x=season, y=as.numeric(ev95percent), group = name), alpha = 1, size = 0.7, colour = "black", linetype = 2) +
-  geom_dl(data = df %>% filter(name == "Grichuk, Randal" | name == "Morales, Kendrys" | name == "Smoak, Justin"), aes(label = name, colour = "Blue Jays"),  method = list(dl.combine("first.points", "last.points"), cex = 0.8)) +
+  geom_dl(data = df %>% filter(name == "Grichuk, Randal" | name == "Morales, Kendrys" | name == "Smoak, Justin"), aes(label = name, colour = "Blue Jays"),  method = list(dl.combine("first.points", "last.points"), cex = 0.7)) +
 scale_colour_brewer(palette = "Spectral") +
   theme_bw() +
+  expand_limits(y=0:60) +
   
   labs(x= "Season", y = "Hit% with EV95+",
        colour = NULL,
-       title = "HIT% WITH EV95+ BY SEASON",
-       subtitle = "Hard hit balls (95+ mph) from MLB Players with minimum 25 AB",
+       title = "RIPPING THE SEAMS OFF THE BASEBALL",
+       subtitle = "Hard-hit balls (95+ mph) by MLB Players with minimum 25 AB",
        caption = "@datajake | Source: baseballsavant.com") +
   theme_bw() +
   theme(panel.border = element_blank(),
         text = element_text(colour = "gray60", family = "wqy-microhei"),
         legend.position = "top",
+        legend.title = element_text(colour="grey20", face = "bold"),
         legend.direction = "horizontal",
         axis.title.x = element_text(colour="grey20", face = "bold"),
         axis.title.y = element_text(colour="grey20", face = "italic"),
         plot.title = element_text(size=15, colour = "gray20", face = "bold", hjust = 0.5),
-        plot.subtitle = element_text(size=10, colour = "gray20", face = "italic", hjust = 0.5),
+        plot.subtitle = element_text(size=10, colour = "gray60", face = "italic", hjust = 0.5),
         plot.caption = element_text(size = 10, colour = "gray60", face = "italic")) +
-  guides(colour = guide_legend(override.aes = list(size=10)))
+  guides(colour = guide_legend(override.aes = list(size=8)))
 ```
