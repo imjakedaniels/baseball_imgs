@@ -27,7 +27,8 @@ df <- batting_2018 %>%
 bind_rows(batting_2017) %>%
   bind_rows(batting_2016)
 ```
-# peaking
+
+# peeking
 ```{r}
 glimpse(df)
 ```
@@ -120,7 +121,7 @@ labs(x= "Season", y = "Barrels",
         plot.margin = margin(t=10, r=20, b=10, l=10, unit = "pt")) 
 ```
 
-# main visual 2 (EV95 quantiles)
+# main visual 2 (hard hit balls in quantiles)
 ```{r}
 df %>%
   mutate(ev95percent = as.numeric(ev95percent)) %>%
